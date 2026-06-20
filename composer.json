@@ -4,7 +4,6 @@
     "description": "PHP 8.2+ Cron scheduler with fluent API",
     "keywords": ["cron", "scheduler", "task scheduling", "php-cron"],
     "license": "MIT",
-    "version": "0.0.1",
     "require": {
         "php": ">=8.2"
     },
