@@ -49,10 +49,21 @@ final readonly class CronExpression
         [0, 7],    // day of week (0 and 7 = Sunday)
     ];
 
+    private const RANGES_SECONDS = [
+        [0, 59],   // second
+        [0, 59],   // minute
+        [0, 23],   // hour
+        [1, 31],   // day of month
+        [1, 12],   // month
+        [0, 7],    // day of week (0 and 7 = Sunday)
+    ];
+
     public string $expression;
 
     /** @var array<int, list<int>> */
     private array $fields;
+
+    public bool $hasSeconds;
 
     public function __construct(string $expression)
     {
@@ -60,23 +71,27 @@ final readonly class CronExpression
 
         $parts = preg_split('/\s+/', $expression);
 
-        if ($parts === false || count($parts) !== 5) {
+        if ($parts === false || (count($parts) !== 5 && count($parts) !== 6)) {
             throw new \InvalidArgumentException(
-                sprintf('Cron expression "%s" must have exactly 5 fields', $expression)
+                sprintf('Cron expression "%s" must have 5 or 6 fields', $expression)
             );
         }
 
+        $this->hasSeconds = count($parts) === 6;
+        $ranges = $this->hasSeconds ? self::RANGES_SECONDS : self::RANGES;
+
         $fields = [];
         foreach ($parts as $i => $part) {
-            [$min, $max] = self::RANGES[$i];
+            [$min, $max] = $ranges[$i];
             $fields[] = self::parseField($part, $min, $max);
         }
 
         // Normalize day of week: replace 7 with 0 (both mean Sunday)
-        if (in_array(7, $fields[4], true)) {
-            $fields[4] = array_unique(array_merge(
-                array_values(array_filter($fields[4], fn(int $d): bool => $d !== 7)),
-                in_array(0, $fields[4], true) ? [0] : [0]
+        $dowIdx = $this->hasSeconds ? 5 : 4;
+        if (in_array(7, $fields[$dowIdx], true)) {
+            $fields[$dowIdx] = array_unique(array_merge(
+                array_values(array_filter($fields[$dowIdx], fn(int $d): bool => $d !== 7)),
+                in_array(0, $fields[$dowIdx], true) ? [0] : [0]
             ));
         }
 
@@ -86,6 +101,22 @@ final readonly class CronExpression
 
     public function isDue(\DateTimeInterface $dateTime): bool
     {
+        if ($this->hasSeconds) {
+            $second    = (int) $dateTime->format('s');
+            $minute    = (int) $dateTime->format('i');
+            $hour      = (int) $dateTime->format('G');
+            $day       = (int) $dateTime->format('j');
+            $month     = (int) $dateTime->format('n');
+            $dayOfWeek = (int) $dateTime->format('w');
+
+            return in_array($second, $this->fields[0], true)
+                && in_array($minute, $this->fields[1], true)
+                && in_array($hour, $this->fields[2], true)
+                && in_array($day, $this->fields[3], true)
+                && in_array($month, $this->fields[4], true)
+                && in_array($dayOfWeek, $this->fields[5], true);
+        }
+
         $minute   = (int) $dateTime->format('i');
         $hour     = (int) $dateTime->format('G');
         $day      = (int) $dateTime->format('j');

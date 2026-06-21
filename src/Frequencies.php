@@ -14,44 +14,14 @@ trait Frequencies
         return $this;
     }
 
-    public function everyMinute(): static
+    public function second(int $seconds): static
     {
-        return $this->cron('* * * * *');
+        return $this->cron("*/{$seconds} * * * * *");
     }
 
-    public function everyTwoMinutes(): static
+    public function minute(int $minutes): static
     {
-        return $this->cron('*/2 * * * *');
-    }
-
-    public function everyThreeMinutes(): static
-    {
-        return $this->cron('*/3 * * * *');
-    }
-
-    public function everyFourMinutes(): static
-    {
-        return $this->cron('*/4 * * * *');
-    }
-
-    public function everyFiveMinutes(): static
-    {
-        return $this->cron('*/5 * * * *');
-    }
-
-    public function everyTenMinutes(): static
-    {
-        return $this->cron('*/10 * * * *');
-    }
-
-    public function everyFifteenMinutes(): static
-    {
-        return $this->cron('*/15 * * * *');
-    }
-
-    public function everyThirtyMinutes(): static
-    {
-        return $this->cron('*/30 * * * *');
+        return $this->cron("*/{$minutes} * * * *");
     }
 
     public function hourly(): static
@@ -66,24 +36,9 @@ trait Frequencies
         return $this->cron("{$minutes} * * * *");
     }
 
-    public function everyTwoHours(): static
+    public function hour(int $hours): static
     {
-        return $this->cron('0 */2 * * *');
-    }
-
-    public function everyThreeHours(): static
-    {
-        return $this->cron('0 */3 * * *');
-    }
-
-    public function everyFourHours(): static
-    {
-        return $this->cron('0 */4 * * *');
-    }
-
-    public function everySixHours(): static
-    {
-        return $this->cron('0 */6 * * *');
+        return $this->cron("0 */{$hours} * * *");
     }
 
     public function daily(): static
@@ -96,6 +51,11 @@ trait Frequencies
         [$hour, $minute] = self::parseTime($time);
 
         return $this->cron("{$minute} {$hour} * * *");
+    }
+
+    public function day(int $days): static
+    {
+        return $this->cron("0 0 */{$days} * *");
     }
 
     public function twiceDaily(int $first = 1, int $second = 13): static
@@ -126,6 +86,14 @@ trait Frequencies
         return $this->cron("{$minute} {$hour} * * {$dayOfWeek}");
     }
 
+    public function week(int $weeks): static
+    {
+        return $this->cron('0 0 * * 0')
+            ->when(function (\DateTimeInterface $now) use ($weeks): bool {
+                return ((int) $now->format('W') - 1) % $weeks === 0;
+            });
+    }
+
     public function monthly(): static
     {
         return $this->cron('0 0 1 * *');
@@ -136,6 +104,11 @@ trait Frequencies
         [$hour, $minute] = self::parseTime($time);
 
         return $this->cron("{$minute} {$hour} {$day} * *");
+    }
+
+    public function month(int $months): static
+    {
+        return $this->cron("0 0 1 */{$months} *");
     }
 
     public function twiceMonthly(int $first = 1, int $second = 16, string $time = '0:0'): static
@@ -292,13 +265,6 @@ trait Frequencies
     {
         $this->preventOverlapping = true;
         $this->expiresAfter = $expiresAt;
-
-        return $this;
-    }
-
-    public function evenInMaintenanceMode(): static
-    {
-        $this->evenInMaintenanceMode = true;
 
         return $this;
     }

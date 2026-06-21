@@ -1,22 +1,27 @@
 {
-    "name": "wolfcode/php-cron",
-    "type": "library",
-    "description": "PHP 8.2+ Cron scheduler with fluent API",
-    "keywords": ["cron", "scheduler", "task scheduling", "php-cron"],
-    "license": "MIT",
-    "require": {
-        "php": ">=8.2"
-    },
-    "autoload": {
-        "psr-4": {
-            "PhpCron\\": "src/"
-        }
-    },
-    "config": {
-        "optimize-autoloader": true,
-        "sort-packages": true
-    },
-    "scripts": {
-        "test": "php tests.php"
+  "name": "wolfcode/php-cron",
+  "type": "library",
+  "description": "PHP 8.2+ Cron scheduler with fluent API",
+  "keywords": [
+    "cron",
+    "scheduler",
+    "task scheduling",
+    "php-cron"
+  ],
+  "license": "MIT",
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "PhpCron\\": "src/"
     }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  },
+  "scripts": {
+    "test": "php tests.php"
+  }
 }

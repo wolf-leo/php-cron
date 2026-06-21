@@ -116,8 +116,8 @@ echo "\n=== Schedule Tests ===\n";
 $scheduler = new Scheduler();
 
 // Test schedule creation with various frequencies
-$s1 = $scheduler->call(fn() => 'every-5-min')->everyFiveMinutes();
-assert_true($s1->getExpression() === '*/5 * * * *', 'everyFiveMinutes sets correct expression');
+$s1 = $scheduler->call(fn() => 'every-5-min')->minute(5);
+assert_true($s1->getExpression() === '*/5 * * * *', 'minute(5) sets correct expression');
 
 $s2 = $scheduler->call(fn() => 'hourly')->hourly();
 assert_true($s2->getExpression() === '0 * * * *', 'hourly sets correct expression');
@@ -138,17 +138,17 @@ $utcTime = new DateTimeImmutable('2026-06-20 16:00:00', new DateTimeZone('UTC'))
 assert_true($s6->isDue($utcTime), 'timezone shifts to midnight Shanghai');
 
 // Test filters: between
-$s7 = $scheduler->call(fn() => 'between-test')->everyMinute()->between('9:00', '17:00');
+$s7 = $scheduler->call(fn() => 'between-test')->minute(1)->between('9:00', '17:00');
 assert_true($s7->isDue(new DateTimeImmutable('2026-01-01 12:00:00')), 'between 9-17 passes at noon');
 assert_false($s7->isDue(new DateTimeImmutable('2026-01-01 06:00:00')), 'between 9-17 rejects at 6AM');
 
 // Test summary/name
-$s8 = $scheduler->call(fn() => 'named-test')->everyMinute()->name('my-custom-task');
+$s8 = $scheduler->call(fn() => 'named-test')->minute(1)->name('my-custom-task');
 assert_true($s8->getSummary() === 'my-custom-task', 'getSummary returns name');
 assert_true($s8->getName() === 'my-custom-task', 'getName works');
 
 // Test without overlapping
-$s9 = $scheduler->call(fn() => 'no-overlap')->everyMinute()->withoutOverlapping(30);
+$s9 = $scheduler->call(fn() => 'no-overlap')->minute(1)->withoutOverlapping(30);
 assert_true($s9->preventsOverlapping() === true, 'withoutOverlapping sets flag');
 assert_true($s9->getExpiresAfter() === 30, 'withoutOverlapping sets expires');
 
@@ -158,13 +158,45 @@ echo "\n=== Integration Tests ===\n";
 $scheduler2 = new Scheduler();
 $results = [];
 
-$scheduler2->call(function () use (&$results) { $results[] = 'task1'; })->everyMinute()->name('t1');
-$scheduler2->call(function () use (&$results) { $results[] = 'task2'; })->everyMinute()->name('t2');
+$scheduler2->call(function () use (&$results) { $results[] = 'task1'; })->minute(1)->name('t1');
+$scheduler2->call(function () use (&$results) { $results[] = 'task2'; })->minute(1)->name('t2');
 
 $scheduler2->runDueEvents(new DateTimeImmutable('2026-01-01 00:00:00'));
 assert_true(count($results) === 2, 'runs 2 due tasks');
 assert_true($results[0] === 'task1', 'first result is task1');
 assert_true($results[1] === 'task2', 'second result is task2');
+
+// ============ Daemon API Demo ============
+echo "\n=== Daemon API Demo ===\n";
+
+$demo = new Scheduler();
+$demo->call(function () { echo "heartbeat\n"; })
+    ->second(3)->name('heartbeat')
+    ->timezone('Asia/Shanghai');
+
+$demo->command('df -h')
+    ->hourly()->appendOutputTo('/tmp/disk.log')->name('disk-usage');
+
+$demo->call(fn() => true)
+    ->dailyAt('9:00')->weekdays()->name('daily-report');
+
+$demo->call(fn() => true)
+    ->minute(30)->between('9:00', '17:00')->name('work-hours');
+
+$demo->call(fn() => true)
+    ->cron('*/15 * * * 0,6')->name('weekend-task');
+
+$demo->call(fn() => 'ok')
+    ->minute(1)
+    ->before(function () { /* setup */ })
+    ->after(function () { /* teardown */ })
+    ->onSuccess(function ($output) { /* log */ })
+    ->onFailure(function (\Throwable $e) { /* alert */ })
+    ->name('hooks-demo');
+
+foreach ($demo->getSchedules() as $s) {
+    assert_true(str_contains($s->getExpression(), '*'), "{$s->getName()}: expression set ({$s->getExpression()})");
+}
 
 // ============ Summary ============
 echo "\n=== Summary ===\n";

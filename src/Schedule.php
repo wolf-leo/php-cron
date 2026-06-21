@@ -4,6 +4,53 @@ declare(strict_types=1);
 
 namespace PhpCron;
 
+/**
+ * @method $this cron(string $expression)
+ * @method $this second(int $seconds)
+ * @method $this minute(int $minutes)
+ * @method $this hour(int $hours)
+ * @method $this day(int $days)
+ * @method $this week(int $weeks)
+ * @method $this month(int $months)
+ * @method $this hourly()
+ * @method $this hourlyAt(int|array $minute)
+ * @method $this daily()
+ * @method $this dailyAt(string $time)
+ * @method $this twiceDaily(int $first = 1, int $second = 13)
+ * @method $this twiceDailyAt(int $first, int $second, int|array $minutes)
+ * @method $this weekly()
+ * @method $this weeklyOn(int|string $day, string $time = '0:0')
+ * @method $this twiceMonthly(int $first = 1, int $second = 16, string $time = '0:0')
+ * @method $this lastDayOfMonth(string $time = '0:0')
+ * @method $this quarterly()
+ * @method $this yearly()
+ * @method $this yearlyOn(int $month = 1, int|string $day = 1, string $time = '0:0')
+ * @method $this weekdays()
+ * @method $this weekends()
+ * @method $this sundays()
+ * @method $this mondays()
+ * @method $this tuesdays()
+ * @method $this wednesdays()
+ * @method $this thursdays()
+ * @method $this fridays()
+ * @method $this saturdays()
+ * @method $this between(string $start, string $end)
+ * @method $this unlessBetween(string $start, string $end)
+ * @method $this when(callable $callback)
+ * @method $this skip(callable $callback)
+ * @method $this environments(string|array ...$environments)
+ * @method $this timezone(string|\DateTimeZone $timezone)
+ * @method $this withoutOverlapping(int $expiresAt = 1440)
+ * @method $this appendOutputTo(string $path)
+ * @method $this sendOutputTo(string $path)
+ * @method $this emailOutputTo(array $emails)
+ * @method $this before(callable $callback)
+ * @method $this after(callable $callback)
+ * @method $this onSuccess(callable $callback)
+ * @method $this onFailure(callable $callback)
+ * @method $this name(string $name)
+ * @method $this description(string $description)
+ */
 class Schedule
 {
     use Frequencies;
@@ -25,8 +72,6 @@ class Schedule
 
     private bool $preventOverlapping = false;
     private int $expiresAfter = 1440;
-    private bool $evenInMaintenanceMode = false;
-
     private ?string $appendOutputTo = null;
     private ?string $sendOutputTo = null;
 
@@ -128,6 +173,11 @@ class Schedule
         return $this->cronExpression ??= new CronExpression($this->expression);
     }
 
+    public function getTask(): \Closure|string
+    {
+        return $this->task;
+    }
+
     public function getExpression(): string
     {
         return $this->expression;
@@ -146,11 +196,6 @@ class Schedule
     public function getExpiresAfter(): int
     {
         return $this->expiresAfter;
-    }
-
-    public function evenInMaintenanceMode(): bool
-    {
-        return $this->evenInMaintenanceMode;
     }
 
     public function getName(): ?string

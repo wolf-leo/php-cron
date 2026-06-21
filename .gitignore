@@ -3,3 +3,5 @@
 /composer.lock
 /.idea/
 .DS_Store
+.php-cron.pid
+.php-cron.pid.tasks.json
