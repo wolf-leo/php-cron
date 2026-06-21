@@ -117,19 +117,19 @@ $scheduler = new Scheduler();
 
 // Test schedule creation with various frequencies
 $s1 = $scheduler->call(fn() => 'every-5-min')->minute(5);
-assert_true($s1->getExpression() === '*/5 * * * *', 'minute(5) sets correct expression');
+assert_true($s1->getExpression() === '0 */5 * * * *', 'minute(5) sets correct expression');
 
 $s2 = $scheduler->call(fn() => 'hourly')->hourly();
-assert_true($s2->getExpression() === '0 * * * *', 'hourly sets correct expression');
+assert_true($s2->getExpression() === '0 0 * * * *', 'hourly sets correct expression');
 
 $s3 = $scheduler->call(fn() => 'daily-830')->dailyAt('8:30');
-assert_true($s3->getExpression() === '30 8 * * *', 'dailyAt 8:30 sets correct expression');
+assert_true($s3->getExpression() === '0 30 8 * * *', 'dailyAt 8:30 sets correct expression');
 
 $s4 = $scheduler->call(fn() => 'twice')->twiceDaily(1, 13);
-assert_true($s4->getExpression() === '0 1,13 * * *', 'twiceDaily sets correct expression');
+assert_true($s4->getExpression() === '0 0 1,13 * * *', 'twiceDaily sets correct expression');
 
 $s5 = $scheduler->call(fn() => 'weekly-mon')->weeklyOn('monday', '9:00');
-assert_true($s5->getExpression() === '0 9 * * 1', 'weeklyOn Monday 9:00 sets correct expression');
+assert_true($s5->getExpression() === '0 0 9 * * 1', 'weeklyOn Monday 9:00 sets correct expression');
 
 // Test isDue with timezone
 $s6 = $scheduler->call(fn() => 'tz-test')->dailyAt('0:00')->timezone('Asia/Shanghai');

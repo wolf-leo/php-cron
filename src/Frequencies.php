@@ -8,6 +8,11 @@ trait Frequencies
 {
     public function cron(string $expression): static
     {
+        $expression = trim($expression);
+        $parts = preg_split('/\s+/', $expression);
+        if ($parts !== false && count($parts) === 5) {
+            $expression = '0 ' . $expression;
+        }
         $this->expression = $expression;
         $this->cronExpression = null;
 
@@ -48,9 +53,9 @@ trait Frequencies
 
     public function dailyAt(string $time): static
     {
-        [$hour, $minute] = self::parseTime($time);
+        [$hour, $minute, $second] = self::parseTime($time);
 
-        return $this->cron("{$minute} {$hour} * * *");
+        return $this->cron("{$second} {$minute} {$hour} * * *");
     }
 
     public function day(int $days): static
@@ -81,9 +86,9 @@ trait Frequencies
             ? (string) (CronExpression::resolveDayName($day) ?? throw new \InvalidArgumentException("Invalid day name: {$day}"))
             : (string) ($day % 7);
 
-        [$hour, $minute] = self::parseTime($time);
+        [$hour, $minute, $second] = self::parseTime($time);
 
-        return $this->cron("{$minute} {$hour} * * {$dayOfWeek}");
+        return $this->cron("{$second} {$minute} {$hour} * * {$dayOfWeek}");
     }
 
     public function week(int $weeks): static
@@ -101,9 +106,9 @@ trait Frequencies
 
     public function monthlyOn(int $day, string $time = '0:0'): static
     {
-        [$hour, $minute] = self::parseTime($time);
+        [$hour, $minute, $second] = self::parseTime($time);
 
-        return $this->cron("{$minute} {$hour} {$day} * *");
+        return $this->cron("{$second} {$minute} {$hour} {$day} * *");
     }
 
     public function month(int $months): static
@@ -113,16 +118,16 @@ trait Frequencies
 
     public function twiceMonthly(int $first = 1, int $second = 16, string $time = '0:0'): static
     {
-        [$hour, $minute] = self::parseTime($time);
+        [$hour, $minute, $sec] = self::parseTime($time);
 
-        return $this->cron("{$minute} {$hour} {$first},{$second} * *");
+        return $this->cron("{$sec} {$minute} {$hour} {$first},{$second} * *");
     }
 
     public function lastDayOfMonth(string $time = '0:0'): static
     {
-        [$hour, $minute] = self::parseTime($time);
+        [$hour, $minute, $second] = self::parseTime($time);
 
-        return $this->cron("{$minute} {$hour} 28-31 * *")
+        return $this->cron("{$second} {$minute} {$hour} 28-31 * *")
             ->when(fn(\DateTimeInterface $now): bool => $now->format('j') === $now->format('t'));
     }
 
@@ -138,54 +143,54 @@ trait Frequencies
 
     public function yearlyOn(int $month = 1, int|string $day = 1, string $time = '0:0'): static
     {
-        [$hour, $minute] = self::parseTime($time);
+        [$hour, $minute, $second] = self::parseTime($time);
 
-        return $this->cron("{$minute} {$hour} {$day} {$month} *");
+        return $this->cron("{$second} {$minute} {$hour} {$day} {$month} *");
     }
 
     public function weekdays(): static
     {
-        return $this->cron(sprintf('%s %s * * 1-5', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 1-5', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function weekends(): static
     {
-        return $this->cron(sprintf('%s %s * * 0,6', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 0,6', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function sundays(): static
     {
-        return $this->cron(sprintf('%s %s * * 0', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 0', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function mondays(): static
     {
-        return $this->cron(sprintf('%s %s * * 1', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 1', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function tuesdays(): static
     {
-        return $this->cron(sprintf('%s %s * * 2', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 2', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function wednesdays(): static
     {
-        return $this->cron(sprintf('%s %s * * 3', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 3', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function thursdays(): static
     {
-        return $this->cron(sprintf('%s %s * * 4', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 4', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function fridays(): static
     {
-        return $this->cron(sprintf('%s %s * * 5', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 5', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function saturdays(): static
     {
-        return $this->cron(sprintf('%s %s * * 6', $this->minutePart(), $this->hourPart()));
+        return $this->cron(sprintf('%s %s %s * * 6', $this->secondPart(), $this->minutePart(), $this->hourPart()));
     }
 
     public function between(string $start, string $end): static
@@ -334,26 +339,42 @@ trait Frequencies
     }
 
     /**
-     * @return array{int, int}
+     * @return array{int, int, int}
      */
     private static function parseTime(string $time): array
     {
-        $segments = explode(':', $time, 2);
+        $segments = explode(':', $time);
 
-        return [(int) $segments[0], (int) ($segments[1] ?? 0)];
+        return [(int) ($segments[0] ?? 0), (int) ($segments[1] ?? 0), (int) ($segments[2] ?? 0)];
+    }
+
+    private function secondPart(): string
+    {
+        $fields = explode(' ', $this->cronExpression?->expression ?? $this->expression);
+
+        return match (count($fields)) {
+            6 => $fields[0],
+            default => '0',
+        };
     }
 
     private function minutePart(): string
     {
-        $current = $this->cronExpression?->expression ?? $this->expression;
+        $fields = explode(' ', $this->cronExpression?->expression ?? $this->expression);
 
-        return explode(' ', $current)[0] ?? '*';
+        return match (count($fields)) {
+            6 => $fields[1] ?? '*',
+            default => $fields[0] ?? '*',
+        };
     }
 
     private function hourPart(): string
     {
-        $current = $this->cronExpression?->expression ?? $this->expression;
+        $fields = explode(' ', $this->cronExpression?->expression ?? $this->expression);
 
-        return explode(' ', $current)[1] ?? '*';
+        return match (count($fields)) {
+            6 => $fields[2] ?? '*',
+            default => $fields[1] ?? '*',
+        };
     }
 }

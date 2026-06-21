@@ -58,7 +58,7 @@ class Schedule
     private const MUTEX_DIR = '/tmp/phpcron/mutex';
 
     private ?CronExpression $cronExpression = null;
-    private string $expression = '* * * * *';
+    private string $expression = '0 * * * * *';
     private ?\DateTimeZone $timezone = null;
 
     /** @var callable[] */
